@@ -60,14 +60,29 @@ bool Sockets::bindAndListen(int port, int backlog) {
     return true;
 }
 
-int Sockets::acceptClient() {
-    socklen_t len = sizeof(addr);
-    int client_fd = accept(sockfd, (struct sockaddr *)&addr, &len);
+int Sockets::acceptClient(std::string* out_ip, int* out_port) {
+    struct sockaddr_in client_addr;
+    socklen_t len = sizeof(client_addr);
+
+    int client_fd = accept(sockfd, (struct sockaddr*)&client_addr, &len);
     if (client_fd < 0) {
         perror("accept");
+        return -1;
     }
+
+    if (out_ip) {
+        char ip_str[INET_ADDRSTRLEN];
+        inet_ntop(AF_INET, &(client_addr.sin_addr), ip_str, INET_ADDRSTRLEN);
+        *out_ip = std::string(ip_str);
+    }
+
+    if (out_port) {
+        *out_port = ntohs(client_addr.sin_port);
+    }
+
     return client_fd;
 }
+
 
 bool Sockets::sendVector(const std::vector<int> &vec, int fd) {
     int use_fd = (fd == -1) ? sockfd : fd;
@@ -104,7 +119,7 @@ bool Sockets::receiveStringAndInt(std::string &str, int &num, int fd) {
     std::vector<char> buffer(len);
     if (len > 0 && recv(use_fd, buffer.data(), len, MSG_WAITALL) != len) return false;
     str.assign(buffer.begin(), buffer.end());
-
+    std::cout << "Recibido string: " << str << "\n";
     return recv(use_fd, &num, sizeof(num), MSG_WAITALL) == sizeof(num);
 }
 

@@ -14,7 +14,7 @@ public:
 
     bool connectToServer(const std::string &ip, int port);
     bool bindAndListen(int port, int backlog = 1);
-    int acceptClient();
+    int acceptClient(std::string* out_ip = nullptr, int* out_port = nullptr);
 
     bool sendVector(const std::vector<int> &vec, int fd = -1);
     bool receiveVector(std::vector<int> &vec, int fd = -1);
