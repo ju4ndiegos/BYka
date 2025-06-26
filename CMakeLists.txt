@@ -11,4 +11,6 @@ add_executable(byka
     src/KeyGenerator.cpp
     src/Node.cpp
     src/BYka.cpp
+    src/Sockets.cpp
+    
 )
