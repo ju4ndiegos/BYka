@@ -91,6 +91,7 @@ void runPeerServer(Node& me, BYka& scheme) {
         int peerFd = server.acceptClient(&peer_ip, &peer_port);
         if (peerFd < 0) continue;
 
+        
         std::string msg;
         int val;
         if (server.receiveStringAndInt(msg, val, peerFd)) {
@@ -134,7 +135,7 @@ void runClient(BYka& scheme) {
         std::cin >> targetId;
         if (targetId == 0) break;
 
-        socket.sendStringAndInt("request_ip", targetId);
+        socket.sendStringAndInt("request_ip", nodeId);
         std::string peerIP;
         int peerPort;
         if (!socket.receiveStringAndInt(peerIP, peerPort)) {
