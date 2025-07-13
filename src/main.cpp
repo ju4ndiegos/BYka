@@ -10,7 +10,7 @@
 constexpr int m = 6, N = 2, eta = 3, p = 31, q = 61;
 constexpr int SERVER_PORT = 5000;
 constexpr int PEER_PORT = 6000;
-const std::string SERVER_IP = "0.0.0.0";
+std::string SERVER_IP = "0.0.0.0";
 
 
 void runServer(BYka& scheme) {
@@ -169,6 +169,7 @@ int main(int argc, char* argv[]) {
     if (argc > 1 && std::string(argv[1]) == "server") {
         runServer(scheme);
     } else {
+        SERVER_IP = argv[1];
         runClient(scheme);
     }
 
