@@ -62,7 +62,7 @@ void runServer(BYka& scheme) {
                 if (!socket.sendStringAndInt(peerIPs[idBuscado-1], peerPorts[idBuscado-1], clientFd)) {
                     std::cerr << "❌ Error al enviar la IP al cliente.\n";
                 } else {
-                    std::cout << "✅ IP enviada correctamente: " << peerIPs[idBuscado-1] << "\n";
+                    std::cout << "✅ IP enviada correctamente: " << peerIPs[idBuscado-1] << ":" << peerPorts[idBuscado-1] << "\n";
                 }
 
             }
@@ -126,7 +126,7 @@ void runClient(BYka& scheme) {
 
     // 2. Iniciar servidor P2P en segundo hilo
     std::thread peerServerThread(runPeerServer, std::ref(me), std::ref(scheme));
-    std::this_thread::sleep_for(std::chrono::seconds(2));
+    //std::this_thread::sleep_for(std::chrono::seconds(2));
 
     // 3. Solicitar conexión a otros peers
     while (true) {
@@ -135,10 +135,21 @@ void runClient(BYka& scheme) {
         std::cin >> targetId;
         if (targetId == 0) break;
 
-        socket.sendStringAndInt("request_ip", nodeId);
+        if (!socket.connectToServer(SERVER_IP, SERVER_PORT)) {
+           std::cerr << "❌ No se pudo conectar al servidor central.\n";
+              continue;
+        }
+
+        socket.sendStringAndInt("request_ip", targetId);
+        std::cout << "🔍 Buscando IP del nodo " << targetId << "...\n";
         std::string peerIP;
-        int peerPort;
+        int peerPort=-1;
         if (!socket.receiveStringAndInt(peerIP, peerPort)) {
+            std::cerr << "❌ Error al solicitar IP del nodo " << targetId << ".\n";
+            continue;
+        }
+        std::cout << "Respuesta del servidor, dirección: " << peerIP << ":" << peerPort << "\n";
+        if (peerPort <= 0 || peerIP.empty()) {
             std::cerr << "❌ No se pudo obtener IP del nodo.\n";
             continue;
         }
