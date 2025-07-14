@@ -143,13 +143,14 @@ void runClient(BYka& scheme) {
         socket.sendStringAndInt("request_ip", targetId);
         std::cout << "🔍 Buscando IP del nodo " << targetId << "...\n";
         std::string peerIP;
-        int peerPort=-1;
-        if (!socket.receiveStringAndInt(peerIP, peerPort)) {
+        int peerPort=6000;
+        int res;
+        if (!socket.receiveStringAndInt(peerIP, res)) {
             std::cerr << "❌ Error al solicitar IP del nodo " << targetId << ".\n";
             continue;
         }
-        std::cout << "Respuesta del servidor, dirección: " << peerIP << ":" << peerPort << "\n";
-        if (peerPort <= 0 || peerIP.empty()) {
+        std::cout << "Respuesta del servidor, dirección: " << peerIP << ":" << res << "\n";
+        if (res <= 0 || peerIP.empty()) {
             std::cerr << "❌ No se pudo obtener IP del nodo.\n";
             continue;
         }
