@@ -3,6 +3,7 @@
 #include <string>
 #include <sstream>
 #include <thread>
+#include <fstream>
 #include "BYka.hpp"
 #include "Node.hpp"
 #include "Sockets.hpp"
@@ -65,6 +66,18 @@ void runServer(BYka& scheme) {
                     std::cout << "✅ IP enviada correctamente: " << peerIPs[idBuscado-1] << ":" << peerPorts[idBuscado-1] << "\n";
                 }
 
+            }
+        } else if (clientReq == 1111) { 
+            // Abrir archivo y escribir el reporte recibido
+            std::ofstream reportFile("peer_report.txt", std::ios::app);
+            if (reportFile.is_open()) {
+                reportFile << message << std::endl;
+                reportFile.close();
+                std::cout << "📝 Reporte guardado en peer_report.txt\n";
+                socket.sendStringAndInt("report_saved", 1, clientFd);
+            } else {
+                std::cerr << "❌ No se pudo abrir el archivo para guardar el reporte.\n";
+                socket.sendStringAndInt("report_error", -1, clientFd);
             }
         }
         else {
@@ -147,20 +160,24 @@ void runClient(BYka& scheme) {
 
     // 2. Iniciar servidor P2P en segundo hilo
     std::thread peerServerThread(runPeerServer, std::ref(me), std::ref(scheme),nodeId);
-    //std::this_thread::sleep_for(std::chrono::seconds(2));
+    std::this_thread::sleep_for(std::chrono::seconds(2));
+
 
     // 3. Solicitar conexión a otros peers
+    int targetId=1;
     while (true) {
-        std::cout << "Ingrese ID de nodo a conectar (0 para salir): ";
-        int targetId;
-        std::cin >> targetId;
+        //std::cout << "Ingrese ID de nodo a conectar (0 para salir): ";
+        //std::cin >> targetId;
         if (targetId == 0) break;
-
+        if (targetId == nodeId) {
+            // No puedes conectarte a ti mismo
+            continue;
+        }
         if (!socket.connectToServer(SERVER_IP, SERVER_PORT)) {
            std::cerr << "❌ No se pudo conectar al servidor central.\n";
               continue;
         }
-
+        
         socket.sendStringAndInt("request_ip", targetId);
         std::cout << "🔍 Buscando IP del nodo " << targetId << "...\n";
         std::string peerIP;
@@ -175,14 +192,14 @@ void runClient(BYka& scheme) {
             std::cerr << "❌ No se pudo obtener IP del nodo.\n";
             continue;
         }
-
+        
         std::cout << "➡️ Conectando con nodo " << targetId << " en " << peerIP << ":" << peerPort << "\n";
         Sockets peer;
         if (!peer.connectToServer(peerIP, peerPort)) {
             std::cerr << "❌ Falló conexión con nodo " << targetId << "\n";
             continue;
         }
-
+        
         peer.sendStringAndInt("saludos_de", nodeId);
         std::string resp;
         int peerNode;
@@ -202,7 +219,7 @@ void runClient(BYka& scheme) {
             sum += key;
         }
         std::cout << "🔑 Clave derivada con nodo " << targetId << ": " << sum << "\n";
-
+        
         // Enviar clave derivada al peer
         if (!peer.sendStringAndInt("pairwise_key", sum)) {
             std::cerr << "❌ Error al enviar clave derivada al nodo " << targetId << "\n";
@@ -222,8 +239,18 @@ void runClient(BYka& scheme) {
         } else {
             std::cout << "❌ Error de verificación de clave derivada con nodo " << targetId << "\n";
         }
+        
+        targetId++;
 
-
+        // REPORTAR A SERVIDOR QUE SE HA CONECTADO A UN PEER
+        std::string mensaje = std::to_string(nodeId)+"," + std::to_string(targetId) + ","+std::to_string(sum)+ "," + std::to_string(success);
+        // Reportar a servidor que se ha conectado a un peer
+        if (!socket.sendStringAndInt(mensaje, 1111)) {
+            std::cerr << "❌ Error al informar al servidor sobre conexión a peer.\n";
+        } else {
+            std::cout << "✅ Conexión a peer " << targetId << " informada al servidor.\n";
+        }
+        
         peer.closeSocket();
     }
 
