@@ -120,7 +120,7 @@ void runPeerServer(Node& me, BYka& scheme, int id = 0) {
         } else {
             std::cout << "❌ Error de verificación de clave derivada con nodo " << peerId << "\n";
         }
-        server.closeSocket();
+        //server.closeSocket();
     }
 }
 
