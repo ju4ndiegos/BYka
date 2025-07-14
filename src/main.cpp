@@ -77,7 +77,7 @@ void runServer(BYka& scheme) {
 }
 
 // Servidor P2P de cada nodo
-void runPeerServer(Node& me, BYka& scheme) {
+void runPeerServer(Node& me, BYka& scheme, int id = 0) {
     Sockets server;
     if (!server.bindAndListen(PEER_PORT)) {
         std::cerr << "❌ Nodo " << me.getID() << " no pudo abrir su puerto P2P.\n";
@@ -93,12 +93,33 @@ void runPeerServer(Node& me, BYka& scheme) {
 
         
         std::string msg;
-        int val;
-        if (server.receiveStringAndInt(msg, val, peerFd)) {
-            std::cout << "🤝 Nodo " << me.getID() << " recibió: " << msg << " (" << val << ")\n";
-            server.sendStringAndInt("ack", 200, peerFd);
+        int peerId;
+        if (server.receiveStringAndInt(msg, peerId, peerFd)) {
+            std::cout << "🤝 Nodo " << me.getID() << " recibió: " << msg << " (" << peerId << ")\n";
+            server.sendStringAndInt("ack", id, peerFd);
         }
-
+        Node peerNodeObj(peerId, m, eta, N, p, q);
+        peerNodeObj.generatePublicKeys();
+        
+        std::vector<int> pairWiseKey = scheme.derivePairwiseKey(me, peerNodeObj);
+        
+        int sum = 0;
+        for (int key : pairWiseKey) {
+            sum += key;
+        }
+        std::cout << "🔑 Clave derivada con nodo " << peerId << ": " << sum << "\n";
+        int peerResponseKey = 0;
+        server.receiveStringAndInt(msg, peerResponseKey, peerFd);
+        if (msg == "pairwise_key") {
+            server.sendStringAndInt("pairwise_key", sum, peerFd);
+        }
+        std::cout << "📬 Respuesta del nodo " << peerId << ": " << msg << " (" << peerResponseKey << ")\n";
+        bool success = sum == peerResponseKey;
+        if (success) {
+            std::cout << "✅ Clave derivada verificada correctamente con nodo " << peerId << "\n";
+        } else {
+            std::cout << "❌ Error de verificación de clave derivada con nodo " << peerId << "\n";
+        }
         server.closeSocket();
     }
 }
@@ -125,7 +146,7 @@ void runClient(BYka& scheme) {
     std::cout << "🔑 Nodo registrado con ID: " << nodeId << "\n";
 
     // 2. Iniciar servidor P2P en segundo hilo
-    std::thread peerServerThread(runPeerServer, std::ref(me), std::ref(scheme));
+    std::thread peerServerThread(runPeerServer, std::ref(me), std::ref(scheme),nodeId);
     //std::this_thread::sleep_for(std::chrono::seconds(2));
 
     // 3. Solicitar conexión a otros peers
@@ -164,10 +185,44 @@ void runClient(BYka& scheme) {
 
         peer.sendStringAndInt("saludos_de", nodeId);
         std::string resp;
-        int code;
-        if (peer.receiveStringAndInt(resp, code)) {
-            std::cout << "📨 Nodo " << targetId << " respondió: " << resp << " (" << code << ")\n";
+        int peerNode;
+        if (peer.receiveStringAndInt(resp, peerNode)) {
+            std::cout << "📨 Nodo " << targetId << " respondió: " << resp << " (" << peerNode << ")\n";
         }
+        else {
+            std::cerr << "❌ Error al recibir respuesta del nodo " << targetId << "\n";
+        }
+        Node peerNodeObj(peerNode, m, eta, N, p, q);
+        peerNodeObj.generatePublicKeys();
+        
+        std::vector<int> pairWiseKey = scheme.derivePairwiseKey(me, peerNodeObj);
+        
+        int sum = 0;
+        for (int key : pairWiseKey) {
+            sum += key;
+        }
+        std::cout << "🔑 Clave derivada con nodo " << targetId << ": " << sum << "\n";
+
+        // Enviar clave derivada al peer
+        if (!peer.sendStringAndInt("pairwise_key", sum)) {
+            std::cerr << "❌ Error al enviar clave derivada al nodo " << targetId << "\n";
+        } else {
+            std::cout << "✅ Clave derivada enviada correctamente a nodo " << targetId << "\n";
+        }
+        std::string peerResponse;
+        int peerResponseKey;
+        if (!peer.receiveStringAndInt(peerResponse, peerResponseKey)) {
+            std::cerr << "❌ Error al recibir respuesta del nodo " << targetId << "\n";
+        } else {
+            std::cout << "📬 Respuesta del nodo " << targetId << ": " << peerResponse << " (" << peerResponseKey << ")\n";
+        }
+        bool success = sum == peerResponseKey;
+        if (success) {
+            std::cout << "✅ Clave derivada verificada correctamente con nodo " << targetId << "\n";
+        } else {
+            std::cout << "❌ Error de verificación de clave derivada con nodo " << targetId << "\n";
+        }
+
 
         peer.closeSocket();
     }
