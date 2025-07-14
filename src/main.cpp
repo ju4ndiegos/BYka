@@ -243,6 +243,10 @@ void runClient(BYka& scheme) {
         targetId++;
 
         // REPORTAR A SERVIDOR QUE SE HA CONECTADO A UN PEER
+        if (!socket.connectToServer(SERVER_IP, SERVER_PORT)) {
+            std::cerr << "❌ No se pudo conectar al servidor central.\n";
+            return;
+            }
         std::string mensaje = std::to_string(nodeId)+"," + std::to_string(targetId) + ","+std::to_string(sum)+ "," + std::to_string(success);
         // Reportar a servidor que se ha conectado a un peer
         if (!socket.sendStringAndInt(mensaje, 1111)) {
