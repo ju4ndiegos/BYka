@@ -82,17 +82,17 @@ sequenceDiagram
     %% Key derivation AB
     A->>A: compute f(Ki, Vj)
     B->>B: compute f(Kj, Vi)
-    Note right of B: SharedKey_AB = hash(f(Ki,Vj) ∪ f(Kj,Vi))
+    Note right of B: SharedKey_AB = sum(f(Ki,Vj)) = sum( f(Kj,Vi))
 
     %% Key derivation BC
     B->>B: compute f(Kj, Vk)
     C->>C: compute f(Kk, Vj)
-    Note right of C: SharedKey_BC = hash(f(Kj,Vk) ∪ f(Kk,Vj))
+    Note right of C: SharedKey_BC = sum(f(Kj,Vk)) = sum( f(Kk,Vj))
 
     %% Key derivation CA
     C->>C: compute f(Kk, Vi)
     A->>A: compute f(Ki, Vk)
-    Note right of A: SharedKey_CA = hash(f(Kk,Vi) ∪ f(Ki,Vk))
+    Note right of A: SharedKey_CA = sum(f(Kk,Vi)) = sum( f(Ki,Vk))
     
 ```
 
