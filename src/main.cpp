@@ -4,6 +4,7 @@
 #include <sstream>
 #include <thread>
 #include <fstream>
+#include <ctime>
 #include "BYka.hpp"
 #include "Node.hpp"
 #include "Sockets.hpp"
@@ -14,6 +15,7 @@ constexpr int m = 24, N = 8, eta = 8, p = 31, q = 37;
 constexpr int SERVER_PORT = 5000;
 constexpr int PEER_PORT = 6000;
 std::string SERVER_IP = "0.0.0.0";
+unsigned t0, t1;
 
 
 void runServer(BYka& scheme) {
@@ -194,6 +196,9 @@ void runClient(BYka& scheme) {
             std::cerr << "❌ No se pudo obtener IP del nodo.\n";
             continue;
         }
+
+        // iniciar key exchange
+        t0 = clock();
         
         std::cout << "➡️ Conectando con nodo " << targetId << " en " << peerIP << ":" << peerPort << "\n";
         Sockets peer;
@@ -220,6 +225,9 @@ void runClient(BYka& scheme) {
         for (int key : pairWiseKey) {
             sum += key;
         }
+        t1 = clock();
+        // fin de derivación de clave
+
         std::cout << "🔑 Clave derivada con nodo " << targetId << ": " << sum << "\n";
         
         // Enviar clave derivada al peer
@@ -248,7 +256,9 @@ void runClient(BYka& scheme) {
             std::cerr << "❌ No se pudo conectar al servidor central.\n";
             return;
             }
-        std::string mensaje = std::to_string(nodeId)+"," + std::to_string(targetId) + ","+std::to_string(sum)+ "," + std::to_string(success);
+
+        double time = (double)(t1 - t0) / CLOCKS_PER_SEC;
+        std::string mensaje = std::to_string(nodeId)+"," + std::to_string(targetId) + ","+std::to_string(sum)+ "," + std::to_string(success) + "," + std::to_string(time);
         // Reportar a servidor que se ha conectado a un peer
         if (!socket.sendStringAndInt(mensaje, 1111)) {
             std::cerr << "❌ Error al informar al servidor sobre conexión a peer.\n";
