@@ -8,7 +8,9 @@
 #include "Node.hpp"
 #include "Sockets.hpp"
 
-constexpr int m = 6, N = 2, eta = 3, p = 31, q = 61;
+
+// set parameters
+constexpr int m = 24, N = 8, eta = 8, p = 31, q = 37;
 constexpr int SERVER_PORT = 5000;
 constexpr int PEER_PORT = 6000;
 std::string SERVER_IP = "0.0.0.0";
