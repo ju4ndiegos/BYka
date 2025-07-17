@@ -242,8 +242,7 @@ void runClient(BYka& scheme) {
             std::cout << "❌ Error de verificación de clave derivada con nodo " << targetId << "\n";
         }
         
-        targetId++;
-
+        
         // REPORTAR A SERVIDOR QUE SE HA CONECTADO A UN PEER
         if (!socket.connectToServer(SERVER_IP, SERVER_PORT)) {
             std::cerr << "❌ No se pudo conectar al servidor central.\n";
@@ -258,8 +257,9 @@ void runClient(BYka& scheme) {
         }
         
         peer.closeSocket();
+        targetId++;
     }
-
+    
     peerServerThread.join();
 }
 
